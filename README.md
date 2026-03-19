@@ -12,7 +12,7 @@ Everything on this account from 2026 forward was built with Claude. I do the arc
 
 The pre-2026 repos are hobby stuff -- ArkOS themes, ROM sorting, boot logos for retro handhelds. Shell scripts and PowerShell. That was the ceiling.
 
-Then this happened in about 33 days:
+Then this happened in about 46 days:
 
 | When | What | Stack |
 |------|------|-------|
@@ -26,6 +26,8 @@ Then this happened in about 33 days:
 | Mar 9 | [backrest-mcp-server](https://github.com/TadMSTR/backrest-mcp-server) -- Backrest backup MCP server | JavaScript |
 | Mar 11 | [jobsearch-mcp](https://github.com/TadMSTR/jobsearch-mcp) -- 18-tool job search platform | Python, Postgres, Qdrant |
 | Mar 11 | [claudebox-panel](https://github.com/TadMSTR/claudebox-panel) -- Web control panel | HTML/JS |
+| Mar 17 | [homelab-ops-mcp](https://github.com/TadMSTR/homelab-ops-mcp) -- Homelab operations MCP server | Python |
+| Mar 17 | [searxng-mcp](https://github.com/TadMSTR/searxng-mcp) -- Private web search MCP with local reranking | TypeScript |
 
 JavaScript, Python, full-stack web -- all languages I'd never touched. The bottleneck was never the code. It was always the thinking.
 
@@ -33,7 +35,7 @@ JavaScript, Python, full-stack web -- all languages I'd never touched. The bottl
 
 ## The Main Projects
 
-**[homelab-agent](https://github.com/TadMSTR/homelab-agent)** -- multi-agent AI system for managing my homelab. 12+ custom MCP servers, semantic search with hybrid retrieval (BM25 + vector + LLM reranking), automated memory distillation pipelines, scoped agent isolation. It runs my monitoring, backups, and knowledge management.
+**[homelab-agent](https://github.com/TadMSTR/homelab-agent)** -- multi-agent AI system for managing my homelab. 12+ custom MCP servers, semantic search with hybrid retrieval (BM25 + vector + LLM reranking), automated memory distillation pipelines, scoped agent isolation, and a temporal knowledge graph (Neo4j + Graphiti) for tracking infrastructure relationships over time. It runs my monitoring, backups, and knowledge management.
 
 The architecture ended up converging on the same design principles as [Letta](https://github.com/letta-ai/letta) (formerly MemGPT) -- a VC-funded UC Berkeley research project with 21K+ stars. Tiered memory, background consolidation, self-managed context. They had a research team and a paper. I had Claude and the right questions.
 
