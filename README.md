@@ -42,7 +42,7 @@ JavaScript, Python, full-stack web -- all languages I'd never touched. The bottl
 
 The architecture ended up converging on the same design principles as [Letta](https://github.com/letta-ai/letta) (formerly MemGPT) -- a VC-funded UC Berkeley research project with 21K+ stars. Tiered memory, background consolidation, self-managed context. They had a research team and a paper. I had Claude and the right questions.
 
-**[jobsearch-mcp](https://github.com/TadMSTR/jobsearch-mcp)** -- aggregates 8 job boards, scores resume fit, tracks applications through a pipeline, does semantic job matching with vector embeddings. Multi-user. My dad already used it to apply to two places.
+**[searxng-mcp](https://github.com/TadMSTR/searxng-mcp)** -- private web search MCP backed by a self-hosted SearXNG instance. Results are reranked by a local ML model. Full-page content fetched via Firecrawl. Optional Ollama integration for query expansion (qwen3:4b) and LLM-synthesized summaries with citations (qwen3:14b). Valkey caching, domain filter profiles, and graceful degradation when any optional component is unavailable. No queries leave my network to a third-party search API.
 
 ---
 
