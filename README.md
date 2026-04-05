@@ -38,9 +38,11 @@ JavaScript, Python, full-stack web -- all languages I'd never touched. The bottl
 
 ## The Main Projects
 
-**[homelab-agent](https://github.com/TadMSTR/homelab-agent)** -- multi-agent AI system for managing my homelab. 12+ custom MCP servers, semantic search with hybrid retrieval (BM25 + vector + LLM reranking), automated memory distillation pipelines, scoped agent isolation, and a temporal knowledge graph (Neo4j + Graphiti) for tracking infrastructure relationships over time. Inter-agent communication runs through a shared event bus federated to NATS JetStream. Multi-phase automation is durable via a Temporal worker -- builds survive restarts and pick up where they left off. It runs my monitoring, backups, and knowledge management.
+**[homelab-agent](https://github.com/TadMSTR/homelab-agent)** -- a multi-agent AI platform built on the idea that agents should be treated like infrastructure: scoped contexts, dedicated memory, defined tool access, documented purpose. Not chat windows -- managed resources.
 
-The architecture ended up converging on the same design principles as [Letta](https://github.com/letta-ai/letta) (formerly MemGPT) -- a VC-funded UC Berkeley research project with 21K+ stars. Tiered memory, background consolidation, self-managed context. They had a research team and a paper. I had Claude and the right questions.
+The memory architecture is what holds it together. A three-tier system (session → working → distilled) with a nightly consolidation pipeline. A temporal knowledge graph (Neo4j + Graphiti) for querying infrastructure relationships over time -- "what connects to SWAG?", "what changed last week?" -- without digging through flat files. Hybrid retrieval: BM25 + vector embeddings + local LLM reranking. Cross-agent communication through a NATS-federated event bus. Durable multi-phase automation via a Temporal worker -- builds survive restarts and resume at the last completed phase.
+
+The architecture converged on the same design principles as [Letta](https://github.com/letta-ai/letta) (formerly MemGPT) -- a VC-funded UC Berkeley research project with 21K+ stars. Tiered memory, background consolidation, self-managed context. They had a research team and a paper. I had Claude and the right questions.
 
 **[searxng-mcp](https://github.com/TadMSTR/searxng-mcp)** -- private web search MCP backed by a self-hosted SearXNG instance. Results are reranked by a local ML model. Full-page content fetched via Firecrawl. Optional Ollama integration for query expansion (qwen3:4b) and LLM-synthesized summaries with citations (qwen3:14b). Valkey caching, domain filter profiles, and graceful degradation when any optional component is unavailable. No queries leave my network to a third-party search API.
 
@@ -58,16 +60,4 @@ I use AI across my whole workflow, not just for code. Writing, documentation, st
 
 I'm direct and I'd rather ship something that works than polish something that doesn't.
 
----
 
-## What I'm Looking For
-
-Roles where systems thinking and AI-augmented development are the actual work. Data science, AI/ML engineering, platform engineering, infrastructure automation -- the title matters less than what I'd be doing day to day.
-
-I don't have a CS degree or ten years of Python. I have the ability to look at complex problems, figure out how the pieces should fit together, and build working systems fast with AI as a partner. That's an increasingly normal way to work. These repos are what it looks like in practice.
-
----
-
-## About the Commit History
-
-The early commit counts are inflated. I was using a GitHub MCP server that committed on nearly every file operation before I found a local filesystem MCP that didn't. The work is real. The commit granularity from those first couple weeks is just... enthusiastic.
