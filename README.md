@@ -22,6 +22,7 @@ The platform runs on a set of integrated components:
 - **[helm-ops-mcp](https://github.com/TadMSTR/helm-ops-mcp)** -- SSH-based MCP server for remote shell and file access to the Helm build host
 - **[cloudcli-plugin-helm-dashboard](https://github.com/TadMSTR/cloudcli-plugin-helm-dashboard)** -- browser dashboard for agent sessions, memory browser, handoff queue, knowledge graph, and live build progress
 - **[agent-bus](https://github.com/TadMSTR/agent-bus)** -- FastMCP inter-agent event bus backed by NATS JetStream federation
+- **[task-queue-mcp](https://github.com/TadMSTR/task-queue-mcp)** -- MCP interface to the agent orchestration task queue; agents submit tasks and record completions through typed, validated tools
 
 **[searxng-mcp](https://github.com/TadMSTR/searxng-mcp)** -- private web search MCP backed by a self-hosted SearXNG instance. Results are reranked by a local ML model. Full-page content fetched via Firecrawl. Optional Ollama integration for query expansion (qwen3:4b) and LLM-synthesized summaries with citations (qwen3:14b). Valkey caching, domain filter profiles, and graceful degradation when any optional component is unavailable. No queries leave my network to a third-party search API.
 
@@ -38,6 +39,11 @@ The platform runs on a set of integrated components:
 | [searxng-mcp](https://github.com/TadMSTR/searxng-mcp) | Self-hosted web search with local ML reranking | TypeScript |
 | [agent-bus](https://github.com/TadMSTR/agent-bus) | Inter-agent event bus with NATS JetStream federation | Python |
 | [jobsearch-mcp](https://github.com/TadMSTR/jobsearch-mcp) | 18-tool job search and application platform | Python |
+| [backrest-mcp-server](https://github.com/TadMSTR/backrest-mcp-server) | Backrest backup management | JavaScript |
+| [unraid-mcp-server](https://github.com/TadMSTR/unraid-mcp-server) | Unraid NAS and Docker host | JavaScript |
+| [task-queue-mcp](https://github.com/TadMSTR/task-queue-mcp) | Agent orchestration task queue | Python |
+| [pm2-mcp](https://github.com/TadMSTR/pm2-mcp) | Typed read/write access to PM2 services | Python |
+| [ntfy-mcp](https://github.com/TadMSTR/ntfy-mcp) | Push notifications via self-hosted ntfy | Python |
 | [backrest-mcp-server](https://github.com/TadMSTR/backrest-mcp-server) | Backrest backup management | JavaScript |
 | [unraid-mcp-server](https://github.com/TadMSTR/unraid-mcp-server) | Unraid NAS and Docker host | JavaScript |
 | [bsky-mcp-server](https://github.com/TadMSTR/bsky-mcp-server) | Bluesky social | JavaScript |
