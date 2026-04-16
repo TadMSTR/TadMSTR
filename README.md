@@ -28,6 +28,8 @@ The platform runs on a set of integrated components:
 
 **[jobsearch-mcp](https://github.com/TadMSTR/jobsearch-mcp)** -- 18-tool job search platform. Resume parsing, semantic job matching, cover letter generation, application tracking, and interview prep -- all through MCP. Postgres for structured data, Qdrant for semantic search.
 
+**[scoped-mcp](https://github.com/TadMSTR/scoped-mcp)** -- per-agent scoped MCP tool proxy. One process per agent: loads only the tools that agent's manifest allows, scopes backend resources to that agent's namespace, injects credentials so the agent never sees them, and writes every tool call to a structured audit trail. 10 built-in modules covering storage, notifications, and infrastructure. Available on PyPI.
+
 ---
 
 ## MCP Servers
@@ -37,10 +39,9 @@ The platform runs on a set of integrated components:
 | [homelab-ops-mcp](https://github.com/TadMSTR/homelab-ops-mcp) | Shell and file access to homelab hosts over SSH | Python |
 | [helm-ops-mcp](https://github.com/TadMSTR/helm-ops-mcp) | Shell and file access to the Helm build host | Python |
 | [searxng-mcp](https://github.com/TadMSTR/searxng-mcp) | Self-hosted web search with local ML reranking | TypeScript |
+| [scoped-mcp](https://github.com/TadMSTR/scoped-mcp) | Per-agent tool proxy: tool filtering, resource scoping, credential isolation, audit logging | Python |
 | [agent-bus](https://github.com/TadMSTR/agent-bus) | Inter-agent event bus with NATS JetStream federation | Python |
 | [jobsearch-mcp](https://github.com/TadMSTR/jobsearch-mcp) | 18-tool job search and application platform | Python |
-| [backrest-mcp-server](https://github.com/TadMSTR/backrest-mcp-server) | Backrest backup management | JavaScript |
-| [unraid-mcp-server](https://github.com/TadMSTR/unraid-mcp-server) | Unraid NAS and Docker host | JavaScript |
 | [task-queue-mcp](https://github.com/TadMSTR/task-queue-mcp) | Agent orchestration task queue | Python |
 | [pm2-mcp](https://github.com/TadMSTR/pm2-mcp) | Typed read/write access to PM2 services | Python |
 | [ntfy-mcp](https://github.com/TadMSTR/ntfy-mcp) | Push notifications via self-hosted ntfy | Python |
