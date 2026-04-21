@@ -30,6 +30,8 @@ The platform runs on a set of integrated components:
 
 **[scoped-mcp](https://github.com/TadMSTR/scoped-mcp)** -- per-agent scoped MCP tool proxy. One process per agent: loads only the tools that agent's manifest allows, scopes backend resources to that agent's namespace, injects credentials so the agent never sees them, and writes every tool call to a structured audit trail. 10 built-in modules covering storage, notifications, and infrastructure. Available on PyPI.
 
+**[ollama-queue-proxy](https://github.com/TadMSTR/ollama-queue-proxy)** -- drop-in HTTP proxy for Ollama. Change one env var (`OLLAMA_HOST=http://localhost:11435`) and your existing Ollama clients get three-tier priority queuing (high/normal/low), per-client API key auth with priority ceilings, and model-aware failover across multiple Ollama hosts. The platform runs several Ollama consumers in parallel — embedding services, chat, batch jobs — and this handles the contention. Auth-first design: keys are scoped, management endpoints are gated separately, and webhook SSRF protection covers both IP literals and hostnames. Prometheus metrics at `/metrics`, operational management surface at `/queue/status`.
+
 ---
 
 ## MCP Servers
