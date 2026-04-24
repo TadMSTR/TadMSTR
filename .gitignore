@@ -1,0 +1,25 @@
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Editor artifacts
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Core dumps
+core.*
+*.core
+
+# Secrets (should never be present, belt-and-suspenders)
+.env
+*.env
+.env.*
+!.env.example
+secrets.*
+*.key
+*.pem
+*.p12
+*.secret
