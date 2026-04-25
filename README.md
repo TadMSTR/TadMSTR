@@ -59,7 +59,6 @@ The platform runs on a set of integrated components:
 
 | Repo | What it is |
 |------|------------|
-| [matrix-admin-bot](https://github.com/TadMSTR/matrix-admin-bot) | Matrix bot for provisioning and managing agent accounts on a Synapse homeserver -- `!create-account`, `!rotate-token`, `!audit-memberships`, and 5 more commands | Python |
 | [claudebox](https://github.com/TadMSTR/claudebox) | AI workstation setup -- Claude Code, RDP, GPU passthrough | Shell, Docker |
 | [claudebox-panel](https://github.com/TadMSTR/claudebox-panel) | Web control panel for the claudebox workstation | HTML/JS |
 | [grafana-dashboards](https://github.com/TadMSTR/grafana-dashboards) | Production monitoring dashboards | Grafana/Flux |
