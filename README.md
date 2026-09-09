@@ -1,80 +1,85 @@
 # Hey, I'm Ted
 
-Sysadmin. Windows infrastructure mostly -- Active Directory, M365, Entra ID, PowerShell. Not a developer. Before 2026 the most I ever wrote was bash and PowerShell scripts to make my job less repetitive.
+Sysadmin — Windows infrastructure mostly. Active Directory, M365, Entra ID, PowerShell. Before 2026 the most I'd written was bash and PowerShell to make my own job less repetitive.
 
-In February 2026 someone in a homelab Discord recommended Claude when I said I was trying ChatGPT. Dropped ChatGPT the next day. Hit 91% of my weekly Claude usage within three days.
+In February 2026 someone in a homelab Discord suggested I try Claude instead of ChatGPT. I dropped ChatGPT the next day and hit 91% of my weekly usage within three days.
 
-Everything on this account from 2026 forward was built with Claude. I do the architecture and make the decisions. Claude writes the code.
+Everything on this account from 2026 forward was built with Claude. I do the architecture and make the decisions — what the failure modes are, where the trust boundaries sit, what "done" means. Claude writes the code.
 
 ---
 
 ## The Platform
 
-**[homelab-agent](https://github.com/TadMSTR/homelab-agent)** -- a multi-agent AI platform built on the idea that agents should be treated like infrastructure: scoped contexts, dedicated memory, defined tool access, documented purpose. Not chat windows -- managed resources.
+**[homelab-agent](https://github.com/TadMSTR/homelab-agent)** — a reference build for running a team of AI agents on a single server.
 
-The memory architecture is what holds it together. A three-tier system (session → working → distilled) with a nightly consolidation pipeline. A temporal knowledge graph (Neo4j + Graphiti) for querying infrastructure relationships over time -- "what connects to SWAG?", "what changed last week?" -- without digging through flat files. Hybrid retrieval: BM25 + vector embeddings + local LLM reranking.
+Five agents — sysadmin, developer, research, writer, security — work semi-autonomously or fully unattended, coordinating through a task queue and communicating over Matrix. Each one gets a scoped tool surface controlled by a manifest, persistent multi-tier memory (Milvus for vector search, OpenSearch for full-text), and an event ledger recording every cross-agent handoff.
 
-The architecture converged on the same design principles as [Letta](https://github.com/letta-ai/letta) (formerly MemGPT) -- a VC-funded UC Berkeley research project with 21K+ stars. Tiered memory, background consolidation, self-managed context. They had a research team and a paper. I had Claude and the right questions.
+The part I find most interesting: the agents build the platform. Research plans a feature, developer writes it, writer documents it, security audits the result — then the new tool becomes available to the agents that built it. The three servers below were all built that way.
 
-The platform runs on a set of integrated components:
+The host is **forge** — a Minisforum MS-A2, Ryzen 9 9955HX, 96 GB, RTX 2000 Ada, Debian 13. 60+ containers across 21 stacks, 30+ PM2 services.
 
-- **[helm-temporal-worker](https://github.com/TadMSTR/helm-temporal-worker)** -- Temporal worker for durable multi-phase builds; agent runs survive restarts and resume at the last completed phase
-- **[helm-ops-mcp](https://github.com/TadMSTR/helm-ops-mcp)** -- SSH-based MCP server for remote shell and file access to the Helm build host
-- **[cloudcli-plugin-helm-dashboard](https://github.com/TadMSTR/cloudcli-plugin-helm-dashboard)** -- browser dashboard for agent sessions, memory browser, handoff queue, knowledge graph, and live build progress
-- **[agent-bus](https://github.com/TadMSTR/agent-bus)** -- FastMCP inter-agent event bus backed by NATS JetStream federation
-- **[task-queue-mcp](https://github.com/TadMSTR/task-queue-mcp)** -- MCP interface to the agent orchestration task queue; agents submit tasks and record completions through typed, validated tools
-
-**[searxng-mcp](https://github.com/TadMSTR/searxng-mcp)** -- private web search MCP backed by a self-hosted SearXNG instance. Results are reranked by a local ML model. Full-page content fetched via Firecrawl. Optional Ollama integration for query expansion (qwen3:4b) and LLM-synthesized summaries with citations (qwen3:14b). Valkey caching, domain filter profiles, and graceful degradation when any optional component is unavailable. No queries leave my network to a third-party search API.
-
-**[jobsearch-mcp](https://github.com/TadMSTR/jobsearch-mcp)** -- 18-tool job search platform. Resume parsing, semantic job matching, cover letter generation, application tracking, and interview prep -- all through MCP. Postgres for structured data, Qdrant for semantic search.
-
-**[scoped-mcp](https://github.com/TadMSTR/scoped-mcp)** -- per-agent scoped MCP tool proxy (Beta, v1.0). One process per agent: loads only the tools that agent's manifest allows, scopes backend resources to that agent's namespace, injects credentials so the agent never sees them, and writes every tool call to a structured audit trail. 10 built-in modules covering storage, notifications, and infrastructure; `mcp_proxy` wires any existing MCP server into a manifest without custom code; composable middleware for tracing and rate limiting; OTel spans auto-enabled via `OTEL_EXPORTER_OTLP_ENDPOINT`. Four optional hardening guardrails: per-agent sliding-window rate limiting with Dragonfly/Valkey state; HashiCorp Vault credential source (AppRole, background renewal); argument-filter middleware for pattern-matching on tool input values (with base64/URL decode chains to catch obfuscated payloads); and operator-in-the-loop approval (`hitl:`) that gates selected tool calls on an explicit approve/reject decision before forwarding — with shadow mode for silent dry-run observation. Available on PyPI.
-
-**[ollama-queue-proxy](https://github.com/TadMSTR/ollama-queue-proxy)** -- smart pool manager for Ollama. Change one env var (`OLLAMA_HOST=http://localhost:11435`) and existing clients get three-tier priority queuing (high/normal/low), per-client API keys with priority ceilings and concurrency caps, model-aware weighted routing to whichever host already has the target model loaded, a Valkey embedding cache (SHA256-keyed — repeated RAG and semantic search requests skip upstream entirely), port-based client injection for clients that can't send Bearer headers, and keep_alive injection to prevent cold-load latency between bursty requests. The platform runs several Ollama consumers in parallel — interactive chat, embeddings, batch agents — and this handles the contention without touching consumer code. Auth-first: keys are scoped, management endpoints gated separately, webhook SSRF protection covers both IP literals and hostnames. Prometheus metrics at `/metrics`, operational management at `/queue/status`.
-
-**[ollama-auth-sidecar](https://github.com/TadMSTR/ollama-auth-sidecar)** -- per-client auth for bare-Ollama users who don't need queuing. Ollama's native auth is a single server-wide key; there's no per-client attribution and tools that can't send `Authorization: Bearer` headers are locked out entirely. The sidecar fixes this: each consumer gets its own listen port and key, and clients that can't send auth headers point at the sidecar instead of Ollama -- the header is injected for them. Single nginx container, config-driven, `${ENV_VAR}` references in header values so keys never appear as literals. Multi-arch image on GHCR. If you outgrow it, `ollama-queue-proxy` is the upgrade path.
+The repo documents every piece of it and the reasoning behind each decision. It's meant to be copied.
 
 ---
 
-## MCP Servers
+## Selected Work
 
-| Server | What it does | Language |
-|--------|-------------|----------|
-| [homelab-ops-mcp](https://github.com/TadMSTR/homelab-ops-mcp) | Shell and file access to homelab hosts over SSH | Python |
-| [helm-ops-mcp](https://github.com/TadMSTR/helm-ops-mcp) | Shell and file access to the Helm build host | Python |
-| [searxng-mcp](https://github.com/TadMSTR/searxng-mcp) | Self-hosted web search with local ML reranking | TypeScript |
-| [scoped-mcp](https://github.com/TadMSTR/scoped-mcp) | Per-agent tool proxy: tool filtering, resource scoping, credential isolation, audit logging | Python |
-| [agent-bus](https://github.com/TadMSTR/agent-bus) | Inter-agent event bus with NATS JetStream federation | Python |
-| [jobsearch-mcp](https://github.com/TadMSTR/jobsearch-mcp) | 18-tool job search and application platform | Python |
-| [task-queue-mcp](https://github.com/TadMSTR/task-queue-mcp) | Agent orchestration task queue | Python |
-| [pm2-mcp](https://github.com/TadMSTR/pm2-mcp) | Typed read/write access to PM2 services | Python |
-| [ntfy-mcp](https://github.com/TadMSTR/ntfy-mcp) | Push notifications via self-hosted ntfy | Python |
-| [backrest-mcp-server](https://github.com/TadMSTR/backrest-mcp-server) | Backrest backup management | JavaScript |
-| [unraid-mcp-server](https://github.com/TadMSTR/unraid-mcp-server) | Unraid NAS and Docker host | JavaScript |
-| [bsky-mcp-server](https://github.com/TadMSTR/bsky-mcp-server) | Bluesky social | JavaScript |
+**[searxng-mcp](https://github.com/TadMSTR/searxng-mcp)** · TypeScript · [npm](https://www.npmjs.com/package/@tadmstr/searxng-mcp)
+
+Private web search for AI agents. Self-hosted SearXNG metasearch, results reranked by a local ML model, then a four-tier fetch cascade — Firecrawl, Crawl4AI, raw HTTP, Wayback — with per-domain learning about which tier actually works where. Optional Ollama query expansion and synthesis. No query ever reaches a third-party search API.
+
+The SSRF guard is the part I'd point at. Validating a URL string blocks literal private IPs but not a public hostname that resolves to one, and pre-resolving then fetching leaves a TOCTOU gap. So the check is installed as undici's connect-time DNS hook — the address validated is the exact one the socket connects to, re-checked on every redirect hop.
+
+**[scoped-mcp](https://github.com/TadMSTR/scoped-mcp)** · Python · [PyPI](https://pypi.org/project/scoped-mcp/) · [docs](https://tadmstr.github.io/scoped-mcp/)
+
+Per-agent MCP tool proxy. One process per agent: it loads only the tools that agent's manifest allows, scopes backend resources to that agent's namespace, injects credentials so the agent never sees them, and writes every tool call to a structured audit trail. `mcp_proxy` wires any existing MCP server into a manifest without custom code.
+
+Optional hardening: per-agent rate limiting, HashiCorp Vault credentials with background renewal, argument-filter middleware that decodes base64/URL chains to catch obfuscated payloads, and operator-in-the-loop approval gating selected calls on an explicit decision — with a shadow mode for silent dry runs first.
+
+**[githost-mcp](https://github.com/TadMSTR/githost-mcp)** · Python
+
+Unified git access — local operations plus GitHub, Gitea, GitLab and Woodpecker — with a per-agent audit trail and a central workspace policy deciding who can write where.
+
+Most of the interesting code is in the refusals. `git remote add x "ext::sh -c '…'"` runs a shell command on the next fetch, so scp-style remote parsing carries a lookahead specifically to stop `ext::` matching the `host:path` shape. Credentials in a remote URL are refused rather than redacted, because redaction would silently store a broken remote while the token persisted in `.git/config`. Write globs normalise paths before matching, since `fnmatch` has no path-segment awareness and `docs/../src/x.py` otherwise matches `docs/**`.
+
+**[webhook-doorman](https://github.com/TadMSTR/webhook-doorman)** · Python
+
+A fail-closed inbound webhook router. One ingress, per-source verification declared in YAML, durable delivery with retry and a dead-letter queue.
+
+It exists because a service I'd written earlier verified signatures with `if not SECRET: return True` on an internet-reachable bind. "Verification skipped" is the outcome that must never be reachable, so here an absent secret disables the source and rejects, HMAC is computed over the raw bytes as received, every credential comparison is constant-time, and unverified sources match the socket peer against a CIDR allowlist — never `X-Forwarded-For`, which the caller controls.
+
+Newest repo here, and the one held to the highest standard: it opened with 145 tests at 95% enforced coverage on the first commit.
+
+**[vikunja-mcp](https://github.com/TadMSTR/vikunja-mcp)** · Python · [container](https://github.com/TadMSTR/vikunja-mcp/pkgs/container/vikunja-mcp)
+
+The Vikunja REST API as scoped per-agent MCP tools. Agents file their own tickets when they find something they can't fix in scope, with idempotency keys and commit backlinks so the tracker stays honest about what actually shipped.
 
 ---
 
-## Other Projects
+## How This Gets Built
 
-| Repo | What it is |
-|------|------------|
-| [claudebox](https://github.com/TadMSTR/claudebox) | AI workstation setup -- Claude Code, RDP, GPU passthrough | Shell, Docker |
-| [claudebox-panel](https://github.com/TadMSTR/claudebox-panel) | Web control panel for the claudebox workstation | HTML/JS |
-| [grafana-dashboards](https://github.com/TadMSTR/grafana-dashboards) | Production monitoring dashboards | Grafana/Flux |
-| [docker-stack-backup](https://github.com/TadMSTR/docker-stack-backup) | Backup and restore for Docker Compose stacks | Shell |
-| [msgraph-entra-toolkit](https://github.com/TadMSTR/msgraph-entra-toolkit) | M365/Entra ID admin toolkit | PowerShell |
+Every build goes through the same loop: a plan, an implementation, then an independent security audit filed as a written report with a per-finding verdict, then remediation, then merge. The audit is a real gate — it runs inside the PR window and it regularly kills the build's own fix. One recent finding disproved a credential-redaction commit by showing that Node's `fetch()` embeds the raw URL in its own `TypeError`, leaking the password the commit existed to protect.
+
+Repos are held to a written standard with three tiers, and a checker that measures conformance rather than assuming it. The rule that keeps it honest: **every requirement has to name the incident it prevents, or it gets dropped.** A requirement with no evidence behind it is an opinion, and opinions are how a standard rots without anyone noticing.
 
 ---
 
 ## How I Work
 
-I think in systems. Layers, tiers, separation of concerns -- that's not something I studied, it's just how my brain organizes things. Storage gets tiered. Networks get segmented. Memory architectures get scoped. I see the structure of a problem before I think about implementation.
+I think in systems. Layers, tiers, separation of concerns — not something I studied, just how my brain organises things. Storage gets tiered. Networks get segmented. Memory architectures get scoped. I see the structure of a problem before I think about implementation.
 
-When something grabs me I go deep. Hours disappear. That's how "I should try this AI thing" became a production platform in a few weeks. It's also why some days on my commit graph look absurd.
+When something grabs me I go deep and hours disappear. That's how "I should try this AI thing" became a production platform. It's also why some days on my commit graph look absurd.
 
-Context switching costs me a lot. I build structured systems and write thorough docs partly because I know future-me won't remember the context otherwise. The homelab-agent's memory system wasn't just designed for Claude -- it came from understanding what it's like to need external persistent context to function well.
+Context switching costs me a lot. I build structured systems and write thorough docs partly because I know future-me won't remember the context otherwise. The platform's memory system wasn't only designed for the agents — it came from knowing what it's like to need external persistent context to function well.
 
-I use AI across my whole workflow, not just for code. Writing, documentation, structuring ideas, getting what's in my head into a form other people can follow. I'm better at understanding systems than explaining them in writing, so AI helps me bridge that gap. The thinking is mine. The polish usually isn't.
+The habit that matters most is refusing to let a proxy stand in for the thing itself. A 200 can come from a different service that happens to hold the port. Configured is not the same as reachable. A green test suite can sit on top of a tool that's been dead for months. Most of what I've learned the hard way is some version of that, and it's the reason AI-assisted work comes out solid instead of merely plausible.
 
-I'm direct and I'd rather ship something that works than polish something that doesn't.
+I'm direct, and I'd rather ship something that works than polish something that doesn't.
+
+---
+
+<!-- Add once the Discord actually has channels and a few people in it: -->
+<!-- ## Community -->
+<!-- Support and discussion for the projects above: [Discord](https://discord.gg/XXXX) -->
+
+[58 public repos →](https://github.com/TadMSTR?tab=repositories)
